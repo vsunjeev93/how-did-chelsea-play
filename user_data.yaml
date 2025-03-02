@@ -1,0 +1,4 @@
+#follow steps here (https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example) to populate the fields below 
+client_id: # add your client id
+client_secret: #add your client secret
+user_agent: # add your user agent
