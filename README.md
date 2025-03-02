@@ -42,3 +42,4 @@ python query_reddit.py --user_data user_data.yaml
 ## Tips for Best Results
 
 1. This script is meant to run on match day. It will typically parse the match thread/post match thread.
+2. Meant within 24 hrs of a match
