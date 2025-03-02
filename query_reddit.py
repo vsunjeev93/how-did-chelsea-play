@@ -6,6 +6,7 @@ from typing import List
 from parse_reddit import getRedditComments, redditUser
 from mlx_lm import load, generate
 import os
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
@@ -25,13 +26,15 @@ def get_context(queries: List[str], db: Collection, n_results: int) -> List[str]
     for index, item in enumerate(results["documents"]):
         context_dict[queries[index]] = item
     return context_dict
-def run(queries,reddit_db,max_context_size):
+
+
+def run(queries, reddit_db, max_context_size):
     context_dict = get_context(queries, reddit_db, max_context_size)
     model, tokenizer = load("mlx-community/Phi-3.5-mini-instruct-4bit")
     all_contexts = []
     for contexts in context_dict.values():
         all_contexts.extend(contexts)
-    
+
     # Remove duplicates while preserving order
     unique_contexts = []
     seen = set()
@@ -40,9 +43,9 @@ def run(queries,reddit_db,max_context_size):
             seen.add(item)
             unique_contexts.append(item)
     context = "\n--\n".join(unique_contexts)
-    system_prompt="""You are a helpful football assistant for Manchester united FC fans.
+    system_prompt = """You are a helpful football assistant for Chelsea FC fans.
     
-Your task is to analyze if a Manchester united match is worth watching based on Reddit comments.
+Your task is to analyze if a Chelsea match is worth watching based on Reddit comments.
 DO NOT reveal the final score or specific goal details under any circumstances.
 Instead, focus on:
 - The overall quality of the match (exciting, boring, controversial)
@@ -59,16 +62,17 @@ End with a "Worth watching" rating from 1-10."""
         },
         {
             "role": "user",
-            "content": f"Based on these Reddit comments tell me if the Manchester united game is worth watching. DO NOT reveal final score or any goal details. CONTEXT: {context}",
+            "content": f"Based on these Reddit comments tell me if the Chelsea game is worth watching. DO NOT reveal final score or any goal details. CONTEXT: {context}",
         },
-        ]
-    
+    ]
+
     prompt = tokenizer.apply_chat_template(messages, tokenize=False)
     generate(model, tokenizer, prompt, verbose=True)
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description="a tool to do RAG with an LLM to know if a recent Manchester united match is worth watching",
+        description="a tool to do RAG with an LLM to know if a recent Chelsea match is worth watching",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -100,17 +104,17 @@ def main():
     content = reddit.parse_subreddit(
         args.subreddit, args.post_limit, args.comment_limit
     )
-    reddit_db = create_db(content)  
+    reddit_db = create_db(content)
     if not args.queries:
         queries = [
-        "How did Manchester united perform in their latest match?",
-        "Was Manchester united's match entertaining?",
-        "Which Manchester united players performed well in the recent match?"
+            "How did Chelsea perform in their latest match?",
+            "Was Chelsea's match entertaining?",
+            "Which Chelsea players performed well in the recent match?",
         ]
     else:
-        queries=args.queries.split(';')
+        queries = args.queries.split(";")
     run(queries, reddit_db, args.max_context_size)
-    
+
 
 if __name__ == "__main__":
     main()
