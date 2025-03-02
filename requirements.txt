@@ -1,0 +1,11 @@
+praw
+pydantic
+PyYAML
+chromadb
+mlx-lm
+argparse
+mlx
+tqdm
+sentencepiece
+huggingface-hub
+tokenizers
