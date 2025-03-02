@@ -1,6 +1,5 @@
 import chromadb
 from chromadb.api.models.Collection import Collection
-import mlx_lm
 import argparse
 import yaml
 from typing import List
