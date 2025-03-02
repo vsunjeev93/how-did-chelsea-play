@@ -76,7 +76,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "--subreddit", help="subreddit to parse data", type=str, default="reddevils"
+        "--subreddit", help="subreddit to parse data", type=str, default="chelseafc"
     )
     parser.add_argument(
         "--post_limit", help="number of top posts to parse", type=int, default=5
