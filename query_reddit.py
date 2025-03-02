@@ -7,7 +7,6 @@ from typing import List
 from parse_reddit import getRedditComments, redditUser
 from mlx_lm import load, generate
 import os
-
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
@@ -27,11 +26,51 @@ def get_context(queries: List[str], db: Collection, n_results: int) -> List[str]
     for index, item in enumerate(results["documents"]):
         context_dict[queries[index]] = item
     return context_dict
+def run(queries,reddit_db,max_context_size):
+    context_dict = get_context(queries, reddit_db, max_context_size)
+    model, tokenizer = load("mlx-community/Phi-3.5-mini-instruct-4bit")
+    all_contexts = []
+    for contexts in context_dict.values():
+        all_contexts.extend(contexts)
+    
+    # Remove duplicates while preserving order
+    unique_contexts = []
+    seen = set()
+    for item in all_contexts:
+        if item not in seen:
+            seen.add(item)
+            unique_contexts.append(item)
+    context = "\n--\n".join(unique_contexts)
+    system_prompt="""You are a helpful football assistant for Chelsea FC fans.
+    
+Your task is to analyze if a Chelsea match is worth watching based on Reddit comments.
+DO NOT reveal the final score or specific goal details under any circumstances.
+Instead, focus on:
+- The overall quality of the match (exciting, boring, controversial)
+- Team performance and effort level
+- Standout players (without mentioning goal scorers)
+- The general mood of fans
 
+Give a concise summary that helps the user decide if they should watch the recorded match.
+End with a "Worth watching" rating from 1-10."""
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt,
+        },
+        {
+            "role": "user",
+            "content": f"Based on these Reddit comments tell me if the chelsea game is worth watching. DO NOT reveal final score or any goal details. CONTEXT: {context}",
+        },
+        ]
+    
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False)
+    print(prompt)
+    generate(model, tokenizer, prompt, verbose=True)
 
 def main():
     parser = argparse.ArgumentParser(
-        description="a tool to create a vector database after parsing a subreddit",
+        description="a tool to do RAG with an LLM to know if a recent Chelsea match is worth watching",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -58,36 +97,22 @@ def main():
     args = parser.parse_args()
     with open(args.user_data, "r") as y_file:
         user_dict = yaml.safe_load(y_file)
-    print(type(user_dict))
     reddit_user = redditUser(**user_dict)
     reddit = getRedditComments(reddit_user)
     content = reddit.parse_subreddit(
         args.subreddit, args.post_limit, args.comment_limit
     )
-    reddit_db = create_db(content)
+    reddit_db = create_db(content)  
     if not args.queries:
-        raise Exception("No query provided")
-    queries = args.queries.split(";")
-    context = get_context(queries, reddit_db, args.max_context_size)
-    model, tokenizer = load("mlx-community/Phi-3.5-mini-instruct-4bit")
-    for key, value in context.items():
-        messages = [
-            {
-                "role": "system",
-                "content": "You are a helpful AI assistant."
-                + " If a question does not make any sense, or is not factually coherent,"
-                + " explain why instead of answering something not correct."
-                + " If you don't know the answer to a question, please don't share false information. Please be concise and no text output after the answer",
-            },
-            {
-                "role": "user",
-                "content": f"{key}. Please use this as context {value}",
-            },
+        queries = [
+        "How did Chelsea perform in their latest match?",
+        "Was Chelsea's match entertaining?",
+        "Which Chelsea players performed well in the recent match?"
         ]
-        context = "\n".join(value)
-        prompt = tokenizer.apply_chat_template(messages, tokenize=False)
-        response = generate(model, tokenizer, prompt, verbose=True)
-
+    else:
+        queries=args.queries.split(';')
+    run(queries, reddit_db, args.max_context_size)
+    
 
 if __name__ == "__main__":
     print("here")
