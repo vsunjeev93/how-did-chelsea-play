@@ -1,4 +1,4 @@
-# Chelsea Match Analysis Tool
+#An LLM with RAG tool for Chelsea Match Analysis
 
 This is for Chelsea fans who don't want to wake up at ungodly hours to watch matches live. A spoiler-free way to decide if the full replay is worth watching based on Reddit comments. 
 
